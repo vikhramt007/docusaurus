@@ -174,7 +174,7 @@ export default function pluginContentDocs(
 
         const validDocIds = Object.keys(docsBaseById);
         sidebarsUtils.checkSidebarsDocIds(validDocIds);
-
+        sidebarsUtils.checkOrphanDocs();
         // Add sidebar/next/previous to the docs
         function addNavData(doc: DocMetadataBase): DocMetadata {
           const {
