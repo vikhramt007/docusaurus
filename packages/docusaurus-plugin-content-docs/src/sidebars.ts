@@ -336,44 +336,28 @@ Available document ids=
         all_docs.add(file);
         // if docmetadata has sidebarname attribute, add to non-orphan docs
         const path = directory + file;
-        fs.readFile(path, 'utf8', function (err, data) {
-          if (err) {
-            throw err;
-          }
-          const content = data;
-          const lines = content.split('\n');
-          for (const line in lines) {
-            if (line.startsWith('id:')) {
-              const doc_id = line.substring(4);
-              const sidebar_name = getSidebarNameByDocId(doc_id);
-              if (sidebar_name) {
-                non_orphan.add(file);
-                // deal with asynchronous crap
-              }
-              break;
+        const data = fs.readFileSync(path, {encoding: 'utf8', flag: 'r'});
+        const lines = data.split('\n');
+        for (const line of lines) {
+          if (line.startsWith('id:')) {
+            const doc_id = line.substring(4);
+            const sidebar_name = getSidebarNameByDocId(doc_id);
+            if (sidebar_name) {
+              non_orphan.add(file);
             }
+            break;
           }
-        });
+        }
       }
     });
 
     // using list of non orphan docs, while we keep adding new elements traverse files
 
-    // for (var it = non_orphan.values(), val = null; val = it.next().value;) {
-    //     console.log(val);
-    // }
-
     // outputs all orphan docs
 
-    // for (var it = all_docs.values(), val = null; val = it.next().value;) {
-    //     if (!non_orphan.has(val)) {
-    //         //console.warn(val + " is an orphan doc");
-    //     }
-    // }
-
-    for (const item in all_docs.values()) {
-      if (!non_orphan.has(item)) {
-        console.warn(`${item} is an orphan doc`);
+    for (const key of all_docs) {
+      if (!non_orphan.has(key)) {
+        console.log(`WARNING: ${key} is an orphan doc`);
       }
     }
   }
