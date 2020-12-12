@@ -329,12 +329,12 @@ Available document ids=
   function checkOrphanDocs() {
     const all_docs = new Set();
     const non_orphan = new Set();
+    let added = false;
     // finds all .md or .mdx files in docs, update for subdirs
     const directory = './docs/';
     fs.readdirSync(directory).forEach((file) => {
       if (file.endsWith('.md') || file.endsWith('.mdx')) {
         all_docs.add(file);
-        // if docmetadata has sidebarname attribute, add to non-orphan docs
         const path = directory + file;
         const data = fs.readFileSync(path, {encoding: 'utf8', flag: 'r'});
         const lines = data.split('\n');
@@ -343,6 +343,9 @@ Available document ids=
             const doc_id = line.substring(4);
             const sidebar_name = getSidebarNameByDocId(doc_id);
             if (sidebar_name) {
+              if (!non_orphan.has(file)) {
+                added = true;
+              }
               non_orphan.add(file);
             }
             break;
@@ -350,13 +353,40 @@ Available document ids=
         }
       }
     });
-
     // using list of non orphan docs, while we keep adding new elements traverse files
 
+    if (added) {
+      let update = true;
+      while (update) {
+        update = false;
+        for (const item of non_orphan) {
+          const path = directory + item;
+          const data = fs.readFileSync(path, {encoding: 'utf8', flag: 'r'});
+          const lines = data.split('\n');
+          for (const line of lines) {
+            // opification you find broken CSS, build your website with the environment variable `USE_SIMPLE_CSS_MINIFIER=true` to minify CSS with the [default cssnano preset](https://github.com/cssnano/cssnano/tree/master/packages/cssnano-preset-default). **Please [fill out an issue](https://github.com/facebook/docusaurus/issues/new?labels=bug%2C+needs+triage&template=bug.md) if you experience CSS minification bugs.**"
+            const arr = line.match(/\[.*?\]\(.+?\)/g);
+            if (arr) {
+              for (const re of arr) {
+                const temp = re.match(/\(.+mdx?\)/);
+                if (temp) {
+                  let target = temp[0];
+                  const len = target.length;
+                  target = target.substr(1, len - 2);
+                  if (!non_orphan.has(target) && all_docs.has(target)) {
+                    non_orphan.add(target);
+                    update = true;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
     // outputs all orphan docs
-
     for (const key of all_docs) {
-      if (!non_orphan.has(key)) {
+      if (!non_orphan.has(key) && added) {
         console.log(`WARNING: ${key} is an orphan doc`);
       }
     }
